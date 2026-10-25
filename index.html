@@ -1,0 +1,351 @@
+
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>六地區唱題時間排行榜</title>
+<style>
+:root {
+  --bg: #f4f6fb;
+  --card: #fff;
+  --text: #20283a;
+  --muted: #6c768a;
+  --primary: #3759c7;
+  --border: #e4e8f0;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Noto Sans TC", sans-serif;
+}
+main { max-width: 760px; margin: auto; padding: 24px 15px 48px; }
+header { text-align: center; padding: 18px 0 22px; }
+header h1 { font-size: 27px; margin: 0 0 8px; }
+header p { color: var(--muted); margin: 0; font-size: 14px; }
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 18px;
+  margin-bottom: 16px;
+  box-shadow: 0 3px 12px #18284b08;
+}
+h2 { font-size: 18px; margin: 0 0 15px; }
+label { display: block; font-size: 14px; font-weight: 600; margin: 13px 0 5px; }
+input, select {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  color: var(--text);
+  background: #fff;
+  border: 1px solid #d5dbea;
+  border-radius: 9px;
+}
+button {
+  border: 0;
+  border-radius: 10px;
+  padding: 12px 15px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.primary { background: var(--primary); color: #fff; width: 100%; margin-top: 17px; }
+.secondary { background: #edf1ff; color: var(--primary); }
+button:disabled { opacity: .55; cursor: wait; }
+.hint { font-size: 12px; color: var(--muted); margin-top: 8px; }
+.message { font-size: 14px; margin-top: 12px; white-space: pre-wrap; }
+.rank-row {
+  display: grid;
+  grid-template-columns: 35px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--border);
+}
+.rank-row:last-child { border-bottom: 0; }
+.rank-number { font-weight: 800; color: var(--primary); font-size: 17px; }
+.region-name { font-weight: 700; }
+.region-sub { color: var(--muted); font-size: 12px; margin-top: 3px; }
+.rank-total { text-align: right; font-weight: 800; }
+.rank-total small { display: block; font-size: 12px; color: var(--muted); font-weight: 400; }
+.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+.stat { background: #edf1ff; border-radius: 12px; padding: 14px; }
+.stat-label { font-size: 12px; color: var(--muted); }
+.stat-value { font-size: 24px; font-weight: 800; margin-top: 4px; }
+.entry {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.entry:last-child { border-bottom: 0; }
+.entry-name { font-weight: 700; }
+.entry-sub { color: var(--muted); font-size: 12px; margin-top: 3px; }
+.entry-time { font-weight: 800; white-space: nowrap; }
+.empty { color: var(--muted); font-size: 14px; text-align: center; padding: 20px 0; }
+.section-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.date-label { color: var(--muted); font-size: 13px; }
+footer { text-align: center; color: var(--muted); font-size: 12px; padding: 12px; }
+@media (max-width: 420px) {
+  header h1 { font-size: 23px; }
+  .card { padding: 15px; }
+}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1>六地區唱題時間排行榜</h1>
+  <p>每日記錄・累積時數・地區排名</p>
+</header>
+
+<section class="card">
+  <h2>填寫今日唱題紀錄</h2>
+  <form id="entryForm">
+    <label for="personName">姓名</label>
+    <input id="personName" maxlength="50" placeholder="請輸入姓名" required>
+
+    <label for="region">所屬地區</label>
+    <select id="region" required>
+      <option value="">請選擇地區</option>
+      <option>環球</option>
+      <option>莒光</option>
+      <option>員山</option>
+      <option>中興</option>
+      <option>安和</option>
+      <option>遠東</option>
+    </select>
+
+    <label for="minutes">今天唱題時間</label>
+    <select id="minutes" required>
+      <option value="">請選擇時間</option>
+    </select>
+
+    <button id="submitBtn" class="primary" type="submit">送出今日紀錄</button>
+    <p class="hint">請依照今天實際唱題時間填寫。</p>
+    <div id="formMessage" class="message" role="status"></div>
+  </form>
+</section>
+
+<section class="card">
+  <div class="section-head">
+    <h2>地區即時排名</h2>
+    <button id="refreshBtn" class="secondary" type="button">重新整理</button>
+  </div>
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-label">今日參與人次</div>
+      <div id="totalPeople" class="stat-value">0</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">今日唱題總分鐘</div>
+      <div id="totalMinutes" class="stat-value">0</div>
+    </div>
+  </div>
+  <p class="date-label" id="todayLabel"></p>
+  <div id="ranking"></div>
+</section>
+
+<section class="card">
+  <div class="section-head">
+    <h2>今日填寫名單</h2>
+    <span id="entryCount" class="date-label">0 筆</span>
+  </div>
+  <div id="entryList"></div>
+</section>
+
+<footer>六地區唱題紀錄｜請依實際情況填寫</footer>
+</main>
+
+<script>
+const REGIONS = ["環球", "莒光", "員山", "中興", "安和", "遠東"];
+
+// 完成 Supabase 設定後，再填入專案網址與 anon/publishable key。
+const SUPABASE_URL = "";
+const SUPABASE_KEY = "";
+
+const minuteSelect = document.getElementById("minutes");
+for (let m = 10; m <= 120; m += 10) {
+  const option = document.createElement("option");
+  option.value = String(m);
+  option.textContent = `${m} 分鐘`;
+  minuteSelect.appendChild(option);
+}
+
+function localDate() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+document.getElementById("todayLabel").textContent =
+  `統計日期：${localDate()}`;
+
+let db = null;
+let entries = [];
+
+function showMessage(message, isError = false) {
+  const el = document.getElementById("formMessage");
+  el.textContent = message;
+  el.style.color = isError ? "#c0392b" : "#237547";
+}
+
+function escapeHTML(value) {
+  return String(value).replace(/[&<>"']/g, char => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;",
+    '"': "&quot;", "'": "&#39;"
+  })[char]);
+}
+
+function render() {
+  const today = localDate();
+  const todaysEntries = entries.filter(entry => entry.entry_date === today);
+  const totals = Object.fromEntries(
+    REGIONS.map(region => [region, { minutes: 0, people: 0 }])
+  );
+
+  todaysEntries.forEach(entry => {
+    if (!totals[entry.region]) return;
+    totals[entry.region].minutes += Number(entry.minutes) || 0;
+    totals[entry.region].people += 1;
+  });
+
+  const ranking = REGIONS.map(region => ({
+    region,
+    minutes: totals[region].minutes,
+    people: totals[region].people
+  })).sort((a, b) => b.minutes - a.minutes || b.people - a.people);
+
+  document.getElementById("totalPeople").textContent = todaysEntries.length;
+  document.getElementById("totalMinutes").textContent =
+    todaysEntries.reduce((sum, e) => sum + (Number(e.minutes) || 0), 0);
+  document.getElementById("entryCount").textContent =
+    `${todaysEntries.length} 筆`;
+
+  document.getElementById("ranking").innerHTML = ranking.map((r, i) => `
+    <div class="rank-row">
+      <div class="rank-number">${i + 1}</div>
+      <div>
+        <div class="region-name">${escapeHTML(r.region)}</div>
+        <div class="region-sub">${r.people} 人次參與</div>
+      </div>
+      <div class="rank-total">
+        ${r.minutes} 分鐘
+        <small>${(r.minutes / 60).toFixed(1)} 小時</small>
+      </div>
+    </div>
+  `).join("");
+
+  const sortedEntries = [...todaysEntries].sort((a, b) =>
+    String(b.created_at || "").localeCompare(String(a.created_at || ""))
+  );
+
+  document.getElementById("entryList").innerHTML = sortedEntries.length
+    ? sortedEntries.map(entry => `
+      <div class="entry">
+        <div>
+          <div class="entry-name">${escapeHTML(entry.name)}</div>
+          <div class="entry-sub">${escapeHTML(entry.region)}</div>
+        </div>
+        <div class="entry-time">${Number(entry.minutes)} 分鐘</div>
+      </div>
+    `).join("")
+    : '<div class="empty">今天還沒有人填寫，歡迎第一位參與！</div>';
+}
+
+async function loadEntries() {
+  if (!db) {
+    document.getElementById("ranking").innerHTML =
+      '<div class="empty">尚未連接共用資料庫。設定 Supabase 後，所有人的紀錄才會同步顯示。</div>';
+    document.getElementById("entryList").innerHTML =
+      '<div class="empty">完成資料庫設定後，這裡會顯示今日名單。</div>';
+    return;
+  }
+
+  const { data, error } = await db
+    .from("singing_entries")
+    .select("id,name,region,minutes,entry_date,created_at")
+    .eq("entry_date", localDate())
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    showMessage("讀取資料失敗：" + error.message, true);
+    return;
+  }
+
+  entries = data || [];
+  render();
+}
+
+document.getElementById("entryForm").addEventListener("submit", async event => {
+  event.preventDefault();
+
+  if (!db) {
+    showMessage("網站尚未連接資料庫，現在不能保存或同步紀錄。請先完成 Supabase 設定。", true);
+    return;
+  }
+
+  const name = document.getElementById("personName").value.trim();
+  const region = document.getElementById("region").value;
+  const minutes = Number(document.getElementById("minutes").value);
+
+  if (!name || !REGIONS.includes(region) ||
+      !Number.isInteger(minutes) || minutes < 10 ||
+      minutes > 120 || minutes % 10 !== 0) {
+    showMessage("請確認姓名、地區及唱題時間。", true);
+    return;
+  }
+
+  const button = document.getElementById("submitBtn");
+  button.disabled = true;
+
+  const { error } = await db.from("singing_entries").insert({
+    name,
+    region,
+    minutes,
+    entry_date: localDate()
+  });
+
+  button.disabled = false;
+
+  if (error) {
+    showMessage("送出失敗：" + error.message, true);
+    return;
+  }
+
+  showMessage("已成功送出今日紀錄！");
+  document.getElementById("entryForm").reset();
+  await loadEntries();
+});
+
+document.getElementById("refreshBtn").addEventListener("click", loadEntries);
+
+async function init() {
+  if (!SUPABASE_URL || !SUPABASE_KEY) {
+    render();
+    await loadEntries();
+    return;
+  }
+
+  try {
+    const module = await import(
+      "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm"
+    );
+    db = module.createClient(SUPABASE_URL, SUPABASE_KEY);
+    await loadEntries();
+    setInterval(loadEntries, 30000);
+  } catch (error) {
+    showMessage("資料庫初始化失敗，請檢查設定及網路。", true);
+  }
+}
+
+init();
+</script>
+</body>
+</html>
